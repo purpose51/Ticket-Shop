@@ -1,4 +1,5 @@
 import mongoose, { Mongoose } from 'mongoose'
+import { Password } from '../services/password';
 
 // An interface that describes the properties 
 // that are required to create a new user
@@ -30,6 +31,17 @@ const userSchema = new mongoose.Schema({
     required: true
   }
 });
+
+userSchema.pre('save', async function(done) {
+  // Mongoose returned document is in this 'this' context, this is why we are 
+  // using the plain old function, using arrow function will change the `this`
+  // context to our file instead of the returned document
+  if(this.isModified('password')) {
+    const hashed = await Password.toHash(this.get('password'));
+    this.set('password', hashed);
+  }
+  done()
+})
 
 userSchema.statics.build = (attrs: UserAttrs) => {
   return new User(attrs)
